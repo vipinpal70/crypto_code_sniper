@@ -1,0 +1,296 @@
+## WEB 
+
+## React + Vite + TypeScript
+
+## Authentication using the Supabase service
+## https://supabase.com/docs/reference/javascript/auth-api
+
+## SMPT Custom configuration for sending OTP email 
+## 
+
+your_email_address = "support@thecryptosnipers.com"
+your_email_password = "Manisha@ANG#13"
+your_smtp_server = "smtpout.secureserver.net"
+your_smtp_port = 465
+your_company_name = "Crypto Snipers"
+
+
+
+## for Google Authentication
+## https://console.cloud.google.com/auth/clients?inv=1&invt=Ab1ISQ&project=analog-subset-459403-h7
+
+## create creds
+
+## get login user data from supabase
+## const { data: { user } } = await supabase.auth.getUser()
+
+## entry of new user into the your database using api call
+
+## 4 service with supabase
+## signup, signin, password reset, googleLogin, resend OTP
+
+## host using nginx service on the ec2 server
+## it run as a background service on the server
+
+## https ot http -->
+## for secure sercive --> SSL
+## for SSL certificate sertBot
+
+https://thecryptosnipers.com/
+
+https://13.235.200.92:8000
+
+-- nginx service -- html page render
+
+
+## we are using 
+## https://tanstack.com/query/v5/docs/reference/QueryClient
+
+## This library for sending api request to your fast api backend
+
+
+## await apiRequest("POST", "/api/auth/complete-profile", user_dict);
+
+
+
+## react hooks, TypeScript, css( tailwind or bootstrap 5 css ), html 
+
+
+
+
+
+
+
+
+
+
+## backend 
+
+## Python ( Fast Api, Pandas, Numpy, request, CoinDcx API, pymongo & motor )
+
+
+
+## we are building a trading platform 
+## requirements for algo trading
+
+## Market data -- using the brokers websocket api  (candle data and ticks data)
+
+## storing to the your mongodb for further use in your codebase
+
+## Market data Code file --> LiveCandle.py
+
+
+
+## Your trading algo Strategy
+
+## FRA_NEW_.py  --> read candle data from db and do some technical operations and generate signal, will be store in trades coll
+
+## EMA_NEW.py
+
+
+
+
+## Brokers api codes files
+## CoinDcxClient.py --> class file with some trading related api methods
+
+
+
+## Order sending to the broker
+## coindcx_order.py  --> read trades coll here 
+## 
+
+## sample of trades coll
+{
+  "Strategy": "ETH Multiplier",
+  "ID": {
+    "$numberLong": "185364872857092"
+  },
+  "Symbol": "ETH-USDT",
+  "Side": "BUY",
+  "StopLoss": 2532.49,
+  "Target": 2545.49,
+  "Price": 2538.25,
+  "OrderTime": {
+    "$date": "2025-06-18T07:38:00.000Z"
+  },
+  "OrderType": "MARKET",
+  "Qty": 0.01,
+  "UpdateTime": 0,
+  "Users": {},
+  "Last_Checked": {
+    "$date": "2025-06-18T14:46:02.542Z"
+  },
+  "Placed": "Order_Checker"
+}
+
+
+## sample of user coll
+
+{
+  "name": "Nirmala Upadhyay",
+  "email": "nirmalaupadhyay1306@gmail.com",
+  "status": "Approved",
+  "approved_at": "2025-06-26T08:54:12.620976+00:00",
+  "created_at": "2025-06-22T13:53:35.346024Z",
+  "broker_name": "",
+  "strategies": {
+    "ETH Multiplier": {
+      "multiplier": 1,
+      "status": "active",
+      "created_at": "2025-06-16T14:36:32.902836Z",
+      "updated_at": "2025-06-16T14:36:32.902855Z"
+    }
+  },
+  "is_admin": false,
+  "is_active": true,
+  "api_verified": true,
+  "balance": {
+    "usdt": 0,
+    "inr": 17488.307708864526
+  },
+  "used_margin": {
+    "usdt": 0,
+    "inr": 6974.055585
+  },
+  "free_margin": {
+    "usdt": 0,
+    "inr": 10514.252123864526
+  },
+  "updated_at": "2025-06-26T08:54:12.620959+00:00",
+  "api_verified_at": "2025-06-22T13:55:41.252909",
+  "broker_connection": {
+    "broker_name": "CoinDCX",
+    "broker_id": "GO31370110",
+    "app_name": "CoinDCX",
+    "api_key": "cf3e9bd6e149253e909e8d8c411ef5c3aa83d36ee357334d",
+    "api_secret": "372e0e9e8a81ee1328bbda3fa9e844caa4356f0e6e26a571ce604e753d90c655",
+    "verified_at": "2025-06-22T13:55:41.252909",
+    "last_verified": "2025-06-22T13:55:41.252909",
+    "status": "connected"
+  },
+  "currency": "INR",
+  "futures_wallets": {
+    "INR": {
+      "id": "31f460c7-8eb8-4a1b-8a2b-93859857c68c",
+      "currency_short_name": "INR",
+      "balance": "17488.30770886452742",
+      "locked_balance": "6974.055585",
+      "cross_order_margin": "0.0",
+      "cross_user_margin": "0.0"
+    }
+  },
+  "last_processed_at": {
+    "$date": "2025-06-24T07:11:09.848Z"
+  }
+}
+
+
+#### find out the user who have deployed this strategy send order to broker after that i will store broker response store into mongoDb clientTrades coll
+
+
+## sample of clientTrades 
+
+{
+  "orderId": "5964a29c-ae1a-47fa-bf1c-7fe202d01ce4",
+  "userId": "visheshpurkait23@gmail.com",  ----> 
+  "avg_price": 0.0,
+  "executedQty": 0,
+  "fee_amount": 0,
+  "leverage": 10,
+  "maker_fee": 0.0236,
+  "order_type": "market_order",
+  "price": 2485.06,
+  "quantity": 0.3,
+  "side": "buy",
+  "status": "initial",
+  "strategyId": "ETH Multiplier",   ------> 
+  "symbol": "B-ETH_USDT",
+  "taker_fee": 0.059,
+  "timestamp": {
+    "$date": "2025-06-26T07:00:27.825Z"
+  },
+  "trade_id": "70422267395380" -----> 
+}
+
+
+
+
+## updating user position (running trades)
+## live_position_updater.py --> insert each user records into the database clientTrades coll
+
+
+
+## check is any trade running in your strategies status "Open"
+
+## Find out user who have deployed Strategy
+## call broker api to get the  order list 
+
+## match order list ( orderId )
+## get avg_price from the matched order
+## update clientTrades coll using the OrderID user_id and side  sort to get the latest one 
+
+
+## use fast api
+
+    read my clientTrades coll and position to check is any trade is running or not 
+    get entry price form the clientTrades and symbol , qty 
+    get current price (ticks) from the ticks coll 
+    calculte pnl using the current price and entry price
+
+    ## usdt and INR
+
+    in case of INR 
+        pnl * qty * 93.0
+    in case of usdt 
+        pnl * qty
+
+    
+    send to the frontend 
+
+
+## notification watcher and email sender
+
+
+read  user coll new entry in the coll
+--> send welcome notification to the user and send email also to the user email id
+--> read user coll document ( key status == "Approved)  send email also to the user email id
+    
+
+
+
+## google sheet 
+
+## read user coll all document and insert into a google sheet
+## if some change the status column to Approved then it will update the user document data into the mongoDb database
+
+
+
+## SQ_OFF.py code file
+
+## exit running trades from the broker using the symbol
+
+
+## balanceUpdater
+
+## 5 min get the user balance form the broker and update into your mongoDb database
+
+
+
+
+## deployed on the ec2 servers
+
+
+## git Crypto-Snipers organization 
+
+    --> two repo  
+
+    1. web  -- 
+    2. backend -- 
+
+    3. trigger movement 
+
+        branch -- web ( dev )  , backend ( develop )
+
+
+
+

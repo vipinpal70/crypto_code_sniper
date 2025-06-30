@@ -1,6 +1,6 @@
 import pandas as pd 
 import numpy as np
-import pymongo
+# import pymongo
 from datetime import datetime
 
 df = pd.DataFrame(ll)
@@ -121,9 +121,9 @@ def detect_fractals(df: pd.DataFrame, lookback_periods: int=2) -> pd.DataFrame:
     return df_result
 
 
-ress = resample(flt, "15min")
+res = resample(flt, "15min")
 
-test = detect_fractals(ress)
+test = detect_fractals(res)
 
 print(test.tail())
 

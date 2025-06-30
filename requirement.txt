@@ -1,0 +1,3 @@
+pip install "python-socketio[client]"   #
+pip install "python-socketio[asyncio]"  # server, use
+pip install "python-socketio[asgi]"     # FastAPI

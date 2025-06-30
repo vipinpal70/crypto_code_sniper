@@ -1,0 +1,381 @@
+## API Rate Limit 
+
+
+
+HTTP (IP-Based) Rate Limits
+
+600 requests / 5 seconds per IP across:
+
+  api.bybit.com`
+  api.bybick.com`
+  api.bybit.kz` (local hostnames)
+
+
+403 Error ("access too frequent") means:
+
+   You've exceeded the IP rate.
+   Must stop all sessions and wait at least 10 minutes for auto-unblock.
+
+
+
+WebSocket IP Limits
+
+Max 500 connections in 5 minutes per IP
+Max 1,000 concurrent connections per IP per market type:
+
+   Spot
+   Linear
+   Inverse
+   Options
+
+Don't frequently connect/disconnect — it may get flagged.
+
+
+
+API Rate Limits (UID-Based)
+
+ Based on UID + Endpoint + 1-second rolling window
+ You’ll see limits in response headers:
+
+  ```
+  X-Bapi-Limit:        current max limit
+  X-Bapi-Limit-Status: remaining requests
+  X-Bapi-Limit-Reset-Timestamp: reset time in ms
+  ```
+
+
+
+Rate Limits by Endpoint Category
+
+Trade Endpoints
+
+| Method | Path                 | Classic | UTA Pro |
+|
+| POST   | /v5/order/create     | 10/s    | 20/s    |
+| POST   | /v5/order/amend      | 10/s    | 10/s    |
+| POST   | /v5/order/cancel     | 10/s    | 20/s    |
+| POST   | /v5/order/cancel-all | 10/s    | 20/s    |
+| GET    | /v5/order/realtime   | 10/s    | 20/s    |
+| GET    | /v5/order/history    | 10/s    | 20/s    |
+| GET    | /v5/execution/list   | 10/s    | 20/s    |
+
+
+
+Position
+
+| Method | Path                      | Classic |
+|
+| GET    | /v5/position/list         | 10/s    |
+| GET    | /v5/position/closed-pnl   | 10/s    |
+| POST   | /v5/position/set-leverage | 10/s    |
+
+
+
+Account
+
+| Path                                  | Limit  |
+|
+| /v5/account/wallet-balance (SPOT)     | 20/s   |
+| /v5/account/wallet-balance (CONTRACT) | 10/s   |
+| /v5/account/contract-transaction-log  | 10/s   |
+| /v5/account/fee-rate                  | 5-10/s |
+
+
+
+Asset
+
+| Path                              | Limit          |
+|
+| Most GET endpoints                | 60–300 req/min |
+| /v5/asset/coin/query-info         | 5/s            |
+| POST asset transfer or withdrawal | 5–20/s         |
+
+
+
+User
+
+| Path                    | Limit  |
+|
+| POST/GET user endpoints | 5–10/s |
+
+
+
+Spread Trading
+
+| Path                      | Limit  |
+|
+| POST/GET spread endpoints | 5–50/s |
+
+
+
+WebSocket Tips
+
+ Don’t exceed 500 connect attempts / 5 min
+ Limit frequent disconnect/reconnect cycles
+
+
+
+Batch Orders
+
+ Batch limits are separate from single order limits 1–10 orders/request allowed
+ Usage = `number_of_requests × number_of_orders_per_request`
+ If a batch of 8 orders exceeds the quota of 5, the first 5 succeed, rest fail
+
+
+
+VIP/Pro Tier Rate Limits
+
+| Tier    | Futures                           | Spot | Options |
+|
+| Default | 10/s                              | 20/s | 10/s    |
+| VIP 1–5 | up to 60/s (futures), 40/s (spot) |      |         |
+| PRO 1–6 | up to 300/s (all markets)         |      |         |
+
+
+
+Common Error Messages:
+
+403 access too frequent` → IP limit exceeded
+retCode: 10006, retMsg: "Too many visits!"` → API UID rate limit hit
+
+
+
+
+
+
+
+
+### Place Order
+
+Endpoint
+
+```http
+POST /v5/order/create
+Base URL: https://api.bybit.com
+```
+
+
+Required Headers
+
+* `X-BAPI-API-KEY`
+* `X-BAPI-TIMESTAMP`
+* `X-BAPI-SIGN`
+* `Content-Type: application/json`
+
+You must sign your requests using the secret key. Signature = HMAC-SHA256 of `timestamp + api_key + recv_window + body` using your `api_secret`.
+
+
+
+#Key Required Parameters
+
+| Param         | Type   | Required        | Description                           |
+|               |
+| `category`    | string | ✅              | `spot`, `linear`, `inverse`, `option` |
+| `symbol`      | string | ✅              | E.g., `BTCUSDT`                       |
+| `side`        | string | ✅              | `Buy` or `Sell`                       |
+| `orderType`   | string | ✅              | `Limit` or `Market`                   |
+| `qty`         | string | ✅              | Quantity (always positive)            |
+| `price`       | string | ❌ (Limit only) | Required if `orderType` is `Limit`    |
+| `timeInForce` | string | ❌              | `GTC`, `IOC`, `PostOnly`, etc.        |
+| `orderLinkId` | string | ❌              | Custom client order ID                |
+| `isLeverage`  | int    | ❌              | 0 (spot) or 1 (margin)                |
+| `orderFilter` | string | ❌              | `Order` or `StopOrder`, etc.          |
+
+
+
+PYTHON FUNCTION (Using `requests`)
+
+```python
+import requests
+import time
+import hmac
+import hashlib
+import json
+
+API_KEY = "your_api_key"
+API_SECRET = "your_api_secret"
+BASE_URL = "https://api.bybit.com"
+
+def generate_signature(api_key, api_secret, timestamp, recv_window, body):
+    param_str = f"{timestamp}{api_key}{recv_window}{body}"
+    return hmac.new(
+        bytes(api_secret, "utf-8"),
+        bytes(param_str, "utf-8"),
+        hashlib.sha256
+    ).hexdigest()
+
+def place_bybit_order(
+    category: str,
+    symbol: str,
+    side: str,
+    order_type: str,
+    qty: str,
+    price: str = None,
+    time_in_force: str = "GTC",
+    is_leverage: int = 0,
+    order_link_id: str = None
+):
+
+    endpoint = "/v5/order/create"
+    url = BASE_URL + endpoint
+    timestamp = str(int(time.time() * 1000))
+    recv_window = "5000"
+    
+    # Create payload
+    payload = {
+        "category": category,
+        "symbol": symbol.upper(),
+        "side": side,
+        "orderType": order_type,
+        "qty": qty,
+        "timeInForce": time_in_force,
+        "isLeverage": is_leverage,
+    }
+
+    if price:
+        payload["price"] = price
+    if order_link_id:
+        payload["orderLinkId"] = order_link_id
+
+    body = json.dumps(payload)
+    signature = generate_signature(API_KEY, API_SECRET, timestamp, recv_window, body)
+
+    headers = {
+        "X-BAPI-API-KEY": API_KEY,
+        "X-BAPI-TIMESTAMP": timestamp,
+        "X-BAPI-RECV-WINDOW": recv_window,
+        "X-BAPI-SIGN": signature,
+        "Content-Type": "application/json"
+    }
+
+    response = requests.post(url, headers=headers, data=body)
+    return response.json()
+```
+
+
+
+#Example Usage
+
+```python
+response = place_bybit_order(
+    category="spot",
+    symbol="BTCUSDT",
+    side="Buy",
+    order_type="Limit",
+    qty="0.01",
+    price="25000",
+    time_in_force="PostOnly",
+    order_link_id="custom-test-order"
+)
+
+print(response)
+```
+
+
+
+
+
+## Cancel Order Endpoint
+
+
+```http
+POST /v5/order/cancel
+Base URL: https://api.bybit.com
+```
+
+
+
+Required Parameters
+
+| Parameter     | Required | Description                                         |
+|
+| `category`    | ✅        | Product type: `linear`, `inverse`, `spot`, `option` |
+| `symbol`      | ✅        | Trading symbol, e.g., `BTCUSDT` (uppercase only)    |
+| `orderId`     | ⚠️       | Required if `orderLinkId` is not provided           |
+| `orderLinkId` | ⚠️       | Required if `orderId` is not provided               |
+| `orderFilter` | ❌        | For Spot only: `Order`, `tpslOrder`, `StopOrder`    |
+
+
+
+> Note: If both `orderId` and `orderLinkId` are provided, `orderId` is prioritized.
+
+
+
+PYTHON FUNCTION (Using `requests`)
+
+```python
+import requests
+import time
+import hmac
+import hashlib
+import json
+
+API_KEY = "your_api_key"
+API_SECRET = "your_api_secret"
+BASE_URL = "https://api.bybit.com"
+
+def generate_signature(api_key, api_secret, timestamp, recv_window, body):
+    param_str = f"{timestamp}{api_key}{recv_window}{body}"
+    return hmac.new(
+        bytes(api_secret, "utf-8"),
+        bytes(param_str, "utf-8"),
+        hashlib.sha256
+    ).hexdigest()
+
+def cancel_bybit_order(
+    category: str,
+    symbol: str,
+    order_id: str = None,
+    order_link_id: str = None,
+    order_filter: str = None
+):
+    if not order_id and not order_link_id:
+        raise ValueError("Either order_id or order_link_id must be provided.")
+
+    endpoint = "/v5/order/cancel"
+    url = BASE_URL + endpoint
+    timestamp = str(int(time.time() * 1000))
+    recv_window = "5000"
+
+    payload = {
+        "category": category,
+        "symbol": symbol.upper()
+    }
+
+    if order_id:
+        payload["orderId"] = order_id
+    if order_link_id:
+        payload["orderLinkId"] = order_link_id
+    if order_filter:
+        payload["orderFilter"] = order_filter
+
+    body = json.dumps(payload)
+    signature = generate_signature(API_KEY, API_SECRET, timestamp, recv_window, body)
+
+    headers = {
+        "X-BAPI-API-KEY": API_KEY,
+        "X-BAPI-TIMESTAMP": timestamp,
+        "X-BAPI-RECV-WINDOW": recv_window,
+        "X-BAPI-SIGN": signature,
+        "Content-Type": "application/json"
+    }
+
+    response = requests.post(url, headers=headers, data=body)
+    return response.json()
+```
+
+
+
+Example Usage
+
+```python
+response = cancel_bybit_order(
+    category="linear",
+    symbol="BTCUSDT",
+    order_id="c6f055d9-7f21-4079-913d-e6523a9cfffa"
+)
+print(response)
+```
+
+
+

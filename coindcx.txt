@@ -1,0 +1,156 @@
+# Example: Creating a stop-loss market order using CoinDCX API
+
+# Assuming you have an instance of your CoinDCX class
+# Replace 'your_coindcx_instance' with your actual instance
+
+def place_stoploss_market_order():
+    """
+    Example function to place a stop-loss market order
+    """
+    
+    # Example parameters - adjust these according to your needs
+    trading_pair = "B-BTC_USDT"  # Bitcoin futures pair
+    order_side = "sell"          # 'sell' for long position stop-loss, 'buy' for short position stop-loss
+    quantity = 0.001             # Amount to sell/buy
+    stop_price = 95000.0         # Price at which stop-loss triggers
+    leverage = 10                # Leverage amount
+    margin_currency = "USDT"     # Margin currency
+    
+    try:
+        # Create the stop-loss market order
+        order_response = your_coindcx_instance.create_futures_order(
+            pair=trading_pair,
+            side=order_side,
+            order_type="stop_market",        # Market order that triggers at stop price
+            quantity=quantity,
+            stop_price=stop_price,           # Trigger price for stop-loss
+            leverage=leverage,
+            reduce_only=True,                # Usually True for stop-loss to close position
+            time_in_force="good_till_cancel", # Order stays active until filled or cancelled
+            margin_currency_short_name=margin_currency
+        )
+        
+        print("Stop-loss order created successfully!")
+        print(f"Order ID: {order_response.get('id', 'N/A')}")
+        print(f"Status: {order_response.get('status', 'N/A')}")
+        print(f"Full response: {order_response}")
+        
+        return order_response
+        
+    except Exception as e:
+        print(f"Error creating stop-loss order: {e}")
+        return None
+
+# Example usage for different scenarios:
+
+def long_position_stoploss():
+    """Stop-loss for a long position (sell when price drops)"""
+    return your_coindcx_instance.create_futures_order(
+        pair="B-BTC_USDT",
+        side="sell",                    # Sell to close long position
+        order_type="stop_market",
+        quantity=0.001,
+        stop_price=95000.0,             # Sell if BTC drops to 95k
+        leverage=10,
+        reduce_only=True,
+        margin_currency_short_name="USDT"
+    )
+
+def short_position_stoploss():
+    """Stop-loss for a short position (buy when price rises)"""
+    return your_coindcx_instance.create_futures_order(
+        pair="B-ETH_USDT", 
+        side="buy",                     # Buy to close short position
+        order_type="stop_market",
+        quantity=0.1,
+        stop_price=3500.0,              # Buy if ETH rises to 3500
+        leverage=5,
+        reduce_only=True,
+        margin_currency_short_name="USDT"
+    )
+
+# Alternative: Stop-loss with custom client order ID for tracking
+def stoploss_with_custom_id():
+    """Stop-loss order with custom tracking ID"""
+    import uuid
+    
+    custom_id = f"SL_{uuid.uuid4().hex[:8]}"  # Generate unique ID
+    
+    return your_coindcx_instance.create_futures_order(
+        pair="B-BTC_USDT",
+        side="sell",
+        order_type="stop_market",
+        quantity=0.001,
+        stop_price=95000.0,
+        client_order_id=custom_id,      # Custom ID for tracking
+        leverage=10,
+        reduce_only=True,
+        time_in_force="good_till_cancel",
+        margin_currency_short_name="USDT"
+    )
+
+# Example with error handling and validation
+def safe_stoploss_order(pair, side, quantity, stop_price, leverage=10):
+    """
+    Create stop-loss order with validation and error handling
+    """
+    
+    # Basic validation
+    if not all([pair, side, quantity, stop_price]):
+        raise ValueError("Missing required parameters")
+    
+    if side.lower() not in ['buy', 'sell']:
+        raise ValueError("Side must be 'buy' or 'sell'")
+    
+    if quantity <= 0 or stop_price <= 0:
+        raise ValueError("Quantity and stop_price must be positive")
+    
+    try:
+        order = your_coindcx_instance.create_futures_order(
+            pair=pair,
+            side=side.lower(),
+            order_type="stop_market",
+            quantity=quantity,
+            stop_price=stop_price,
+            leverage=leverage,
+            reduce_only=True,
+            time_in_force="good_till_cancel",
+            margin_currency_short_name="USDT"
+        )
+        
+        return {
+            'success': True,
+            'order': order,
+            'message': 'Stop-loss order placed successfully'
+        }
+        
+    except Exception as e:
+        return {
+            'success': False,
+            'error': str(e),
+            'message': 'Failed to place stop-loss order'
+        }
+
+# Usage examples:
+if __name__ == "__main__":
+    # Example 1: Simple stop-loss for long BTC position
+    # Sells 0.001 BTC if price drops to 95,000 USDT
+    result1 = safe_stoploss_order(
+        pair="B-BTC_USDT",
+        side="sell", 
+        quantity=0.001,
+        stop_price=95000.0,
+        leverage=10
+    )
+    print("Long position stop-loss:", result1)
+    
+    # Example 2: Stop-loss for short ETH position  
+    # Buys 0.1 ETH if price rises to 3,500 USDT
+    result2 = safe_stoploss_order(
+        pair="B-ETH_USDT",
+        side="buy",
+        quantity=0.1, 
+        stop_price=3500.0,
+        leverage=5
+    )
+    print("Short position stop-loss:", result2)
