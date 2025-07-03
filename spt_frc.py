@@ -31,11 +31,10 @@ Exit Conditions:
 
 This strategy is designed to capture significant price movements while managing risk through the use of ATR for dynamic stop-loss and take-profit levels.
 
-
-
 Tushar:
 	80 fees
 	pnl calculation in inr = pnl * 93
+
 
 """
 
@@ -63,10 +62,11 @@ dfx["p_supertrend"] = dfx["supertrend"].shift(1)
 dfx["n_open"] = dfx["open"].shift(-1)
 dfx["n_date"] = dfx["date"].shift(-1)
 
-dfx = dfx[dfx["date"] >= datetime(2025, 6, 30)].copy(deep=True)
+dfx = dfx[dfx["date"] >= datetime(2025, 6, 1)].copy(deep=True)
 
 dfx["date"] = pd.to_datetime(dfx["date"], format="%Y-%m-%d %H:%M:%S")
 dfx["n_date"] = pd.to_datetime(dfx["n_date"], format="%Y-%m-%d %H:%M:%S")
+
 
 buy_entries = (
     (dfx["close"] > dfx["fractal_top"])
@@ -85,11 +85,24 @@ dfx["Buy Entry Cond"] = buy_entries
 dfx["Sell Entry Cond"] = sell_entries
 dfx.reset_index(inplace=True)
 
-main_df = dfx.drop_duplicates(
-    subset=["fractal_top", "fractal_time_top", "Buy Entry Cond"], keep="first"
-)
-entry_df = main_df.drop_duplicates(
-    subset=["fractal_bottom", "fractal_time_bottom", "Sell Entry Cond"], keep="first"
+
+# main_df = dfx.drop_duplicates(
+#     subset=["fractal_top", "fractal_time_top", "Buy Entry Cond"], keep="first"
+# )
+# entry_df = main_df.drop_duplicates(
+#     subset=["fractal_bottom", "fractal_time_bottom", "Sell Entry Cond"], keep="first"
+# )
+
+entry_df = dfx.drop_duplicates(
+    subset=[
+        "fractal_top",
+        "fractal_time_top",
+        "Buy Entry Cond",
+        "fractal_bottom",
+        "fractal_time_bottom",
+        "Sell Entry Cond",
+    ],
+    keep="first",
 )
 
 entry_df.dropna(inplace=True, axis=0)
@@ -118,7 +131,7 @@ for i in range(len(entry_df) - 2):
     FractalTopTime = entry_df.at[i, "fractal_time_top"]
     FractalBottomTime = entry_df.at[i, "fractal_time_bottom"]
 
-    atr = entry_df.at[i, "p_atr"]
+    atr_val = entry_df.at[i, "p_atr"]
     spt = entry_df.at[i, "p_supertrend"]
 
     if entry_df.at[i, "Buy Entry Cond"] and FractalTopTime >= prev_exit_time:
@@ -137,8 +150,10 @@ for i in range(len(entry_df) - 2):
 
     if entry and side == "buy":
         # print("Buy trade")
-        sl = EntryPrice - (1 * atr)
-        tg = EntryPrice + (2 * atr)
+        # pdb.set_trace()
+        sl = EntryPrice - (1 * atr_val)
+        tg = EntryPrice + (2 * atr_val)
+
         sl_flt = dfx[(dfx["date"] > EntryTime) & (dfx["low"] <= sl)]
         tg_flt = dfx[(dfx["date"] > EntryTime) & (dfx["high"] >= tg)]
 
@@ -151,6 +166,7 @@ for i in range(len(entry_df) - 2):
                 ExitPrice = sl
                 ExitTime = first_sl
                 ExitType = "SL"
+
             else:
                 ExitPrice = tg
                 ExitTime = first_tg
@@ -174,13 +190,14 @@ for i in range(len(entry_df) - 2):
             "FractalPrice": FractalTop,
             "FractalTime": FractalTopTime,
             "SuperTrend": spt,
-            "Atr": atr,
+            "Atr": atr_val,
             "StopLoss": sl,
             "Target": tg,
             "ExitType": ExitType,
             "ExitPrice": ExitPrice,
             "ExitTime": ExitTime,
         }
+
         entry = False
         side = ""
 
@@ -189,8 +206,9 @@ for i in range(len(entry_df) - 2):
 
     if entry and side == "sell":
         # print("Sell trade")
-        sl = EntryPrice + (1 * atr)  # SL above entry for sell
-        tg = EntryPrice - (2 * atr)  # TG below entry for sell
+        # pdb.set_trace()
+        sl = EntryPrice + (1 * atr_val)  # SL above entry for sell
+        tg = EntryPrice - (2 * atr_val)  # TG below entry for sell
         sl_flt = dfx[(dfx["date"] > EntryTime) & (dfx["high"] > sl)]
         tg_flt = dfx[(dfx["date"] > EntryTime) & (dfx["low"] < tg)]
 
@@ -203,6 +221,7 @@ for i in range(len(entry_df) - 2):
                 ExitPrice = sl
                 ExitTime = first_sl
                 ExitType = "SL"
+
             else:
                 ExitPrice = tg
                 ExitTime = first_tg
@@ -223,16 +242,17 @@ for i in range(len(entry_df) - 2):
             "EntryTime": EntryTime,
             "EntryPrice": EntryPrice,
             "Side": side,
-            "FractalPrice": FractalTop,
-            "FractalTime": FractalTopTime,
+            "FractalPrice": FractalBottom,
+            "FractalTime": FractalBottomTime,
             "SuperTrend": spt,
-            "Atr": atr,
+            "Atr": atr_val,
             "StopLoss": sl,
             "Target": tg,
             "ExitType": ExitType,
             "ExitPrice": ExitPrice,
             "ExitTime": ExitTime,
         }
+
         entry = False
         side = ""
 
@@ -249,4 +269,4 @@ sheet["pnl"] = np.where(
 )
 
 
-sheet.to_csv("spt_frc.csv", index=False)
+sheet.to_csv("spt_frc_sample.csv", index=False)

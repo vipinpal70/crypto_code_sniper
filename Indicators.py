@@ -44,6 +44,95 @@ def resample(df: pd.DataFrame, timeframe: str) -> pd.DataFrame:
     return resampled_df.reset_index()
 
 
+import pandas as pd
+import numpy as np
+
+
+# def detect_fractal_v2(df: pd.DataFrame, lookback_periods: int = 2) -> pd.DataFrame:
+#     if not pd.api.types.is_datetime64_any_dtype(df["date"]):
+#         df["date"] = pd.to_datetime(df["date"])
+
+#     if lookback_periods < 1:
+#         raise ValueError("lookback_periods must be at least 1.")
+
+#     df_result = df.sort_values(by="date", ascending=True).copy()
+
+#     if df_result.empty:
+#         return pd.DataFrame(
+#             columns=[
+#                 "date",
+#                 "open",
+#                 "high",
+#                 "low",
+#                 "close",
+#                 "volume",
+#                 "fractal_top",
+#                 "fractal_bottom",
+#                 "fractal_time_top",
+#                 "fractal_time_bottom",
+#             ]
+#         )
+
+#     highs = df_result["high"].values
+#     lows = df_result["low"].values
+#     dates = df_result["date"].values
+
+#     detected_fractal_top_price = np.full(len(highs), np.nan)
+#     detected_fractal_bottom_price = np.full(len(highs), np.nan)
+#     detected_fractal_top_time = np.full(len(highs), pd.NaT, dtype="datetime64[ns]")
+#     detected_fractal_bottom_time = np.full(len(highs), pd.NaT, dtype="datetime64[ns]")
+
+#     for i in range(lookback_periods, len(highs) - lookback_periods):
+#         is_fractal_high = True
+#         for j in range(1, lookback_periods + 1):
+#             if highs[i] < highs[i - j] or highs[i] < highs[i + j]:
+#                 is_fractal_high = False
+#                 break
+
+#         if is_fractal_high:
+#             detected_fractal_top_price[i] = highs[i]
+#             detected_fractal_top_time[i] = dates[i]
+
+#         is_fractal_low = True
+#         for j in range(1, lookback_periods + 1):
+#             if lows[i] > lows[i - j] or lows[i] > lows[i + j]:
+#                 is_fractal_low = False
+#                 break
+
+#         if is_fractal_low:
+#             detected_fractal_bottom_price[i] = lows[i]
+#             detected_fractal_bottom_time[i] = dates[i]
+
+#     df_result["_temp_fractal_top_price"] = detected_fractal_top_price
+#     df_result["_temp_fractal_bottom_price"] = detected_fractal_bottom_price
+#     df_result["_temp_fractal_top_time"] = detected_fractal_top_time
+#     df_result["_temp_fractal_bottom_time"] = detected_fractal_bottom_time
+
+#     df_result["fractal_top"] = (
+#         df_result["_temp_fractal_top_price"].ffill().shift(lookback_periods)
+#     )
+#     df_result["fractal_bottom"] = (
+#         df_result["_temp_fractal_bottom_price"].ffill().shift(lookback_periods)
+#     )
+#     df_result["fractal_time_top"] = (
+#         df_result["_temp_fractal_top_time"].ffill().shift(lookback_periods)
+#     )
+#     df_result["fractal_time_bottom"] = (
+#         df_result["_temp_fractal_bottom_time"].ffill().shift(lookback_periods)
+#     )
+
+#     df_result = df_result.drop(
+#         columns=[
+#             "_temp_fractal_top_price",
+#             "_temp_fractal_bottom_price",
+#             "_temp_fractal_top_time",
+#             "_temp_fractal_bottom_time",
+#         ]
+#     )
+
+#     return df_result
+
+
 def detect_fractal_v2(df: pd.DataFrame, lookback_periods: int = 2) -> pd.DataFrame:
 
     if not pd.api.types.is_datetime64_any_dtype(df["date"]):
@@ -118,6 +207,7 @@ def detect_fractal_v2(df: pd.DataFrame, lookback_periods: int = 2) -> pd.DataFra
     df_result["fractal_bottom"] = df_result[
         "_temp_detected_fractal_bottom_price"
     ].ffill()
+
     df_result["fractal_time_top"] = df_result["_temp_detected_fractal_top_time"].ffill()
     df_result["fractal_time_bottom"] = df_result[
         "_temp_detected_fractal_bottom_time"
