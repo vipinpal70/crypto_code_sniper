@@ -31,7 +31,7 @@ def resample_data(dff, time_frame):
 	return resampled
 
 
-@jit(nopython=True, parallel=True)
+
 def detect_fractals(highs, lows, dates_int, consecutive=5):
 	lookback = (consecutive - 1) // 2
 	n = (consecutive // 2) + 1
@@ -41,7 +41,7 @@ def detect_fractals(highs, lows, dates_int, consecutive=5):
 	fractal_time_top = np.full(len(highs), np.nan)
 	fractal_time_bottom = np.full(len(highs), np.nan)
 
-	for i in prange(lookback, len(highs) - lookback):
+	for i in range(lookback, len(highs) - lookback):
 		is_fractal_top = True
 		is_fractal_bottom = True
 		for j in range(1, lookback + 1):
@@ -60,7 +60,7 @@ def detect_fractals(highs, lows, dates_int, consecutive=5):
 	return fractal_top, fractal_bottom, fractal_time_top, fractal_time_bottom
 
 
-@njit
+
 def SuperTrend_optimized(high, low, close, atr_period, factor):
 	hl2, atr, upper_band, lower_band = calculate_bands(high, low, close, atr_period, factor)
 	supertrend_values, direction = calculate_supertrend(close, upper_band, lower_band, atr)
@@ -68,7 +68,6 @@ def SuperTrend_optimized(high, low, close, atr_period, factor):
 	return supertrend_values, direction
 
 
-@njit
 def calculate_bands(high, low, close, atr_period, factor):
 	"""Calculate the HL2, ATR, Upper and Lower bands"""
 	n = len(high)
@@ -110,7 +109,7 @@ def calculate_bands(high, low, close, atr_period, factor):
 	return hl2, atr, upper_band, lower_band + 
 
 
-@njit
+
 def calculate_supertrend(close, upper_band, lower_band, atr):
 	n = len(close)
 	direction = np.zeros(n, dtype=np.int32)
@@ -162,12 +161,12 @@ def calculate_supertrend(close, upper_band, lower_band, atr):
 	return supertrend, direction
 
 
-@njit(parallel=True)
+
 def find_entrydata(start, end, price, side, timestamps, highs, lows, closes):
 	entryPrice = np.empty(len(start), dtype=np.float64)
 	entryTime = np.empty(len(start), dtype=np.int64)
 
-	for i in prange(len(start)):
+	for i in range(len(start)):
 		st = start[i]
 		nd = end[i]
 		pr = price[i]
@@ -228,16 +227,8 @@ def df_normalizatoin(tf, fractal, atr_period, factor, df, dir_name):
 	df.at[len(df) - 1, 'buy_bid'] = df.at[len(df) - 1, 'high'] + .1 * df.at[len(df) - 2, 'atr']
 	df.at[len(df) - 1, 'sell_bid'] = df.at[len(df) - 1, 'low'] - .1 * df.at[len(df) - 2, 'atr']
 
-	# df['Buy Qty'] = ( cap * leverage * df['buy_bid'] ) // cm
-	# df['Sell Qty'] = ( cap * leverage * df['sell_bid'] ) // cm
 
 	max_pnl_loss = -perTradLoss
-
-	# buy_ep = 1 / df['buy_bid']
-	# df['BuyMaxSL'] = (1 / (buy_ep - max_pnl_loss / (df['Buy Qty'] * cm))).round(2)
-
-	# sell_ep = 1 / df['sell_bid']
-	# df['SellMaxSL'] = (1 / (sell_ep - max_pnl_loss / (df['Sell Qty'] * -cm))).round(2)
 
 	buy_entries = (df['high'] > df['fractal_top']) & (df['date'] > df['fractalTime_Top']) & (df['Direction'] == -1)
 	sell_entries = (df['low'] < df['fractal_bottom']) & (df['date'] > df['fractalTime_Bottom']) & (df['Direction'] == 1)
@@ -281,10 +272,6 @@ def df_normalizatoin(tf, fractal, atr_period, factor, df, dir_name):
 	ent = entry_df['EntryTime'].values
 	buy_entries = entry_df['Buy Entry Cond'].values
 	sell_entries = entry_df['Sell Entry Cond'].values
-	# buy_max = entry_df['BuyMaxSL'].values
-	# sell_max = entry_df['SellMaxSL'].values
-	# bqty = entry_df['Buy Qty'].values
-	# sqty = entry_df['Sell Qty'].values
 	ft = entry_df['fractal_top'].values
 	ftt = entry_df['fractalTime_Top'].values
 	fb = entry_df['fractal_bottom'].values
@@ -396,13 +383,11 @@ def df_normalizatoin(tf, fractal, atr_period, factor, df, dir_name):
 			print(key, sheet.shape)
 			sheet.to_csv(key)
 
-	# pdb.set_trace()
-	# print(datetime.now())
 
 	return True
 
 
-@jit(nopython=True, parallel=True)
+
 def calculate_atr(high, low, close, window=14):
 
 	high_low = high - low
@@ -415,13 +400,13 @@ def calculate_atr(high, low, close, window=14):
 
 	atr[:window] = np.mean(true_range[:window])
 
-	for i in prange(window, len(high)):
+	for i in range(window, len(high)):
 		atr[i] = (atr[i - 1] * (window - 1) + true_range[i]) / window
 
 	return atr
 
 
-@jit(nopython=True)
+
 def find_exit(m_timestamps, m_lows, m_highs, t, side, sl_val, tg_val):
 	start_idx = 0
 	for j in range(len(m_timestamps)):
@@ -441,7 +426,7 @@ def find_exit(m_timestamps, m_lows, m_highs, t, side, sl_val, tg_val):
 	return 0.0, 0.0, 2.0
 
 
-@jit(nopython=True)
+
 def backtest_new(entryPrices, entryTimes, buy_entries, sell_entries, p_atr, ft, ftt, fb, fbt, tg, sl, m_timestamps, m_highs, m_lows, m_closes, tf, fractal, trade_data):
 
 	trade_count = 0 
